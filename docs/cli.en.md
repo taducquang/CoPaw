@@ -28,7 +28,7 @@ copaw init --force      # Overwrite existing config files
 1. **Heartbeat** — interval (e.g. `30m`), target (`main` / `last`), optional
    active hours.
 2. **Show tool details** — whether tool call details appear in channel messages.
-3. **Language** — `zh` or `en` for agent persona files (SOUL.md, etc.).
+3. **Language** — `zh` / `en` / `ru` for agent persona files (SOUL.md, etc.).
 4. **Channels** — optionally configure iMessage / Discord / DingTalk / Feishu /
    QQ / Console.
 5. **LLM provider** — select provider, enter API key, choose model (**required**).
@@ -66,8 +66,9 @@ and more. See [Console](./console) for a full walkthrough.
 If the frontend was not built, the root URL returns a JSON message like `{"message": "CoPaw Web Console is not available."}` but the API still works.
 
 **To build the frontend:** in the project's `console/` directory run
-`npm ci && npm run build` (output in `src/copaw/console/`). Docker images and pip
-packages already include the Console.
+`npm ci && npm run build`, then copy the output to the package directory:
+`mkdir -p src/copaw/console && cp -R console/dist/. src/copaw/console/`.
+Docker images and pip packages already include the Console.
 
 ### copaw daemon
 

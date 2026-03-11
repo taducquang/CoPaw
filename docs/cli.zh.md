@@ -25,7 +25,7 @@ copaw init --force      # 覆盖已有配置文件
 
 1. **心跳** —— 间隔（如 `30m`）、目标（`main` / `last`）、可选活跃时间段。
 2. **工具详情** —— 是否在频道消息中显示工具调用细节。
-3. **语言** —— Agent 人设文件（SOUL.md 等）使用 `zh` 或 `en`。
+3. **语言** —— Agent 人设文件（SOUL.md 等）使用 `zh` / `en` / `ru`。
 4. **频道** —— 可选配置 iMessage / Discord / DingTalk / Feishu / QQ / Console。
 5. **LLM 提供商** —— 选择提供商、输入 API Key、选择模型（**必选**）。
 6. **技能** —— 全部启用 / 不启用 / 自定义选择。
@@ -59,8 +59,10 @@ copaw app --log-level debug           # 详细日志
 
 若未构建前端，根路径会返回类似 `{"message": "CoPaw Web Console is not available."}` 的提示信息（实际文案可能调整），API 仍可正常使用。
 
-**构建方式：** 在项目 `console/` 目录下执行 `npm ci && npm run build`，产物在
-`src/copaw/console/`。Docker 镜像或 pip 安装包已内置控制台，无需单独构建。
+**构建方式：** 在项目 `console/` 目录下执行 `npm ci && npm run build`，
+然后将构建产物复制到包目录：
+`mkdir -p src/copaw/console && cp -R console/dist/. src/copaw/console/`。
+Docker 镜像或 pip 安装包已内置控制台，无需单独构建。
 
 ### copaw daemon
 

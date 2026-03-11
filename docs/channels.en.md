@@ -8,11 +8,12 @@ Two ways to configure channels:
 - **Console** (recommended) — In the [Console](./console) under **Control → Channels**, click a channel card, enable it and fill in credentials in the drawer. Changes take effect when you save.
 - **Edit `config.json` directly** — Default `~/.copaw/config.json` (created by `copaw init`), set `enabled: true` and fill in that platform's credentials. Saving triggers a reload without restarting the app.
 
-All channels share two fields:
+All channels have common fields below:
 
 - **enabled** — Turn the channel on or off.
 - **bot_prefix** — Prefix for bot replies (e.g. `[BOT]`) so they're easy to spot.
 - **filter_tool_messages** — (optional, default `false`) Filter tool call and output messages from being sent to users. Set to `true` to hide tool execution details.
+- **filter_thinking** — (optional, default `false`) Filter model thinking/reasoning content from being sent to users. Set to `true` to hide thinking blocks.
 
 Below is how to get credentials and fill config for each channel.
 
@@ -255,32 +256,50 @@ The JSON in step 6 grants the following permissions (app identity) for messaging
 
 The app polls the local iMessage database for new messages and sends replies on your behalf.
 
-### Prerequisites
+1. Ensure **Messages** is signed in on this Mac (open the Messages app and sign in with your Apple ID in System Settings).
 
-- Ensure **Messages** is signed in on this Mac (open the Messages app and sign in
-  with your Apple ID in System Settings).
-- Install **imsg** (used to access the iMessage database):
-  ```bash
-  brew install steipete/tap/imsg
-  ```
-- The default iMessage database path is `~/Library/Messages/chat.db`. Use this unless you've moved the database.
-- The app needs **Full Disk Access** (System Settings → Privacy & Security → Full Disk
-  Access) to read `chat.db`.
-- Everything stays on your machine; no data is sent elsewhere.
+2. Install **imsg** (used to access the iMessage database):
 
-### Fill config.json
+   ```bash
+   brew install steipete/tap/imsg
+   ```
 
-```json
-"imessage": {
-  "enabled": true,
-  "bot_prefix": "[BOT]",
-  "db_path": "~/Library/Messages/chat.db",
-  "poll_sec": 1.0
-}
-```
+   > If installation fails on Intel Mac, clone the repo and build from source:
+   >
+   > ```bash
+   > git clone https://github.com/steipete/imsg.git
+   > cd imsg
+   > make build
+   > sudo cp build/Release/imsg /usr/local/bin/
+   > cp ./bin/imsg /usr/local/bin/
+   > ```
 
-- **db_path** — Path to the iMessage database
-- **poll_sec** — Poll interval in seconds (1 is fine)
+3. For CoPaw to read iMessage data, **Terminal** (or the app you use to run `copaw app`) and **Messages** need **Full Disk Access** (System Settings → Privacy & Security → Full Disk Access).
+
+4. Set the iMessage database path. The default is `~/Library/Messages/chat.db`; use this unless you've moved the database. You can configure it in either of these ways:
+
+   - In **Console → Channels**, click the **iMessage** card, turn **Enable** on, enter the path in **DB Path**, and click **Save**.
+
+     ![save](https://img.alicdn.com/imgextra/i1/O1CN01Bc1Dxe1rhi2vhjGsC_!!6000000005663-2-tps-3814-1954.png)
+
+   - Or edit `config.json` (usually at `~/.copaw/config.json`):
+
+     ```json
+     "imessage": {
+       "enabled": true,
+       "bot_prefix": "[BOT]",
+       "db_path": "~/Library/Messages/chat.db",
+       "poll_sec": 1.0
+     }
+     ```
+
+     **db_path** — Path to the iMessage database
+
+     **poll_sec** — Poll interval in seconds (1 is fine)
+
+5. After saving, send any message from your phone to the iMessage account signed in on this Mac (same Apple ID). You should see a reply.
+
+   ![reply](https://img.alicdn.com/imgextra/i2/O1CN01btWaV21CtFmbnxFYw_!!6000000000138-2-tps-1206-2622.png)
 
 ---
 
@@ -381,6 +400,8 @@ If you need a proxy (e.g. for network restrictions):
 
 5. In **Developer settings**, get **AppID** and **AppSecret** (ClientSecret) and fill them into config (see below). Add your server’s **IP to the whitelist** — only whitelisted IPs can call the Open API outside sandbox.
 
+   > **Tip:** If you are using ModelScope Creative Space to deploy CoPaw, the IP whitelist for QQ channel should be: `47.92.200.108`
+
 ![1](https://img.alicdn.com/imgextra/i4/O1CN012UQWI21cnvBAUcz54_!!6000000003646-2-tps-4082-2126.png)
 
 6. In sandbox config, scan the QR code with QQ to add the bot to your message list
@@ -465,18 +486,175 @@ It is recommended to configure the following in `@BotFather`:
 
 ---
 
+## Mattermost
+
+The Mattermost channel uses WebSockets for real-time monitoring and REST APIs for replies. It supports both direct messages and group chats, using **Threads** to isolate conversation contexts in channels.
+
+### Get credentials
+
+1. Create a **Bot Account** in Mattermost (System Console → Integrations → Bot Accounts).
+2. Grant necessary permissions (e.g., `Post all`) and obtain the **Access Token**.
+3. Configure the **URL** and **Token** in the Console or `config.json`.
+
+### Core Config
+
+| Field                             | Description                                                               | Default  |
+| --------------------------------- | ------------------------------------------------------------------------- | -------- |
+| **url**                           | Full URL of your Mattermost instance                                      | -        |
+| **bot_token**                     | Bot Access Token                                                          | -        |
+| **show_typing**                   | Whether to show the "typing..." indicator                                 | `true`   |
+| **thread_follow_without_mention** | Whether to respond without @mention in threads the bot has already joined | `false`  |
+| **dm_policy**                     | DM policy: `open` (allow all) or `allowlist` (whitelist only)             | `"open"` |
+| **group_policy**                  | Group policy: `open` (allow all) or `allowlist` (whitelist only)          | `"open"` |
+| **allow_from**                    | List of allowed User IDs (effective if policy is `allowlist`)             | `[]`     |
+| **deny_message**                  | Automatic reply when access is denied by the whitelist                    | `""`     |
+
+> **Note**: The `session_id` for Mattermost is fixed as `mattermost_dm:{mm_channel_id}` for DMs and isolated by Thread ID for group chats. Recent history is automatically fetched as context supplement only upon the first trigger of a session.
+
+---
+
+## MQTT
+
+### About
+
+Currently, only text and JSON format messages are supported.
+
+JSON message format
+
+```
+{
+  "text": "...",
+  "redirect_client_id": "..."
+}
+```
+
+### Basic Configuration
+
+| Description     | Field           | Required field | Example                 |
+| --------------- | --------------- | -------------- | ----------------------- |
+| MQTT Host       | host            | Y              | 127.0.0.1               |
+| MQTT Port       | port            | Y              | 1883                    |
+| Transport       | transport       | Y              | tcp                     |
+| Clean Session   | clean_session   | Y              | true                    |
+| QoS             | qos             | Y              | 2                       |
+| MQTT Username   | username        | N              |                         |
+| MQTT Password   | password        | N              |                         |
+| Subscribe Topic | subscribe_topic | Y              | server/+/up             |
+| Publish Topic   | publish_topic   | Y              | client/{client_id}/down |
+| TLS Enabled     | tls_enabled     | N              | false                   |
+| TLS CA Certs    | tls_ca_certs    | N              | /tsl/ca.pem             |
+| TLS Certfile    | tls_certfile    | N              | /tsl/client.pem         |
+| TLS Keyfile     | tls_keyfile     | N              | /tsl/client.key         |
+
+### Topic
+
+1. Simple subscription and push
+
+   | subscribe_topic | publish_topic |
+   | --------------- | ------------- |
+   | server          | client        |
+
+2. Fuzzy match subscription and automatic push
+
+   Subscribe to the wildcard topic `/server/+/up`. Messages will be automatically pushed to the corresponding topic based on the client's `client_id`. For example, after a client pushes a message to `/server/client_a/up`, OpenClaw will push the message to `/client/client_b/down` after processing.
+
+   | subscribe_topic | publish_topic           |
+   | --------------- | ----------------------- |
+   | server/+/up     | client/{client_id}/down |
+
+3. Redirected topic push
+
+   The message sent is in JSON format. The subscription topic is `server/client_a/up`, and the push topic is `client/client_a/down`.
+
+   ```json
+   {
+     "text": "Tell me a joke, return the result in plain text",
+     "redirect_client_id": "client_b"
+   }
+   ```
+
+   Messages will be pushed to `client/client_b/down` based on the `redirect_client_id` attribute, enabling cross-topic push. In IoT scenarios, with OpenClaw as the core, autonomous message pushing between multiple devices can be achieved according to individual requirements.
+
+---
+
+## Matrix
+
+The Matrix channel connects CoPaw to any Matrix homeserver using the [matrix-nio](https://github.com/poljar/matrix-nio) library. It supports text messaging in both direct messages and group rooms.
+
+### Create a Matrix bot account and get an access token
+
+1. Create a bot account on any Matrix homeserver (e.g. [matrix.org](https://matrix.org) — register at [app.element.io](https://app.element.io/#/register)).
+
+2. Get the bot's **access token**. The easiest way is via Element:
+
+   - Log in as the bot account at [app.element.io](https://app.element.io)
+   - Go to **Settings → Help & About → Advanced → Access Token**
+   - Copy the token (it starts with `syt_...`)
+
+   Alternatively, use the Matrix Client-Server API directly:
+
+   ```bash
+   curl -X POST "https://matrix.org/_matrix/client/v3/login" \
+     -H "Content-Type: application/json" \
+     -d '{"type":"m.login.password","user":"@yourbot:matrix.org","password":"yourpassword"}'
+   ```
+
+   The response includes `access_token`.
+
+3. Note your bot's **User ID** (format: `@username:homeserver`, e.g. `@mybot:matrix.org`) and the **Homeserver URL** (e.g. `https://matrix.org`).
+
+### Configure the channel
+
+**Method 1:** Configure in the Console
+
+Go to **Control → Channels**, click **Matrix**, enable it, and fill in:
+
+- **Homeserver URL** — e.g. `https://matrix.org`
+- **User ID** — e.g. `@mybot:matrix.org`
+- **Access Token** — the token you copied above (shown as a password field)
+
+**Method 2:** Edit `~/.copaw/config.json`
+
+Find `channels.matrix` in `config.json`:
+
+```json
+"matrix": {
+  "enabled": true,
+  "bot_prefix": "[BOT]",
+  "homeserver": "https://matrix.org",
+  "user_id": "@mybot:matrix.org",
+  "access_token": "syt_..."
+}
+```
+
+Save the file; the channel will reload automatically if CoPaw is already running.
+
+### Chat with the bot
+
+Invite the bot to a room or send it a direct message from any Matrix client (e.g. Element). The bot listens for messages in all rooms it has joined.
+
+### Notes
+
+- The Matrix channel is **text-only** (no image/file attachments in the current version).
+- Only rooms the bot has already joined are monitored. Invite the bot to a room before sending messages.
+- For self-hosted homeservers, set `homeserver` to your server's base URL (e.g. `https://matrix.example.com`).
+
+---
+
 ## Appendix
 
 ### Config overview
 
-| Channel  | Config key | Main fields                                                             |
-| -------- | ---------- | ----------------------------------------------------------------------- |
-| DingTalk | dingtalk   | client_id, client_secret                                                |
-| Feishu   | feishu     | app_id, app_secret; optional encrypt_key, verification_token, media_dir |
-| iMessage | imessage   | db_path, poll_sec (macOS only)                                          |
-| Discord  | discord    | bot_token; optional http_proxy, http_proxy_auth                         |
-| QQ       | qq         | app_id, client_secret                                                   |
-| Telegram | telegram   | bot_token; optional http_proxy, http_proxy_auth                         |
+| Channel    | Config key | Main fields                                                             |
+| ---------- | ---------- | ----------------------------------------------------------------------- |
+| DingTalk   | dingtalk   | client_id, client_secret                                                |
+| Feishu     | feishu     | app_id, app_secret; optional encrypt_key, verification_token, media_dir |
+| iMessage   | imessage   | db_path, poll_sec (macOS only)                                          |
+| Discord    | discord    | bot_token; optional http_proxy, http_proxy_auth                         |
+| QQ         | qq         | app_id, client_secret                                                   |
+| Telegram   | telegram   | bot_token; optional http_proxy, http_proxy_auth                         |
+| Mattermost | mattermost | url, bot_token; optional show_typing, dm_policy, allow_from             |
+| Matrix     | matrix     | homeserver, user_id, access_token                                       |
 
 Field details and structure are in the tables above and [Config & working dir](./config).
 
@@ -487,14 +665,16 @@ video, audio, and file varies by channel.
 **✓** = supported. **🚧** = under construction (implementable but not yet
 done). **✗** = not supported (not possible on this channel).
 
-| Channel  | Recv text | Recv image | Recv video | Recv audio | Recv file | Send text | Send image | Send video | Send audio | Send file |
-| -------- | --------- | ---------- | ---------- | ---------- | --------- | --------- | ---------- | ---------- | ---------- | --------- |
-| DingTalk | ✓         | ✓          | ✓          | ✓          | ✓         | ✓         | ✓          | ✓          | ✓          | ✓         |
-| Feishu   | ✓         | ✓          | ✓          | ✓          | ✓         | ✓         | ✓          | ✓          | ✓          | ✓         |
-| Discord  | ✓         | ✓          | ✓          | ✓          | ✓         | ✓         | 🚧         | 🚧         | 🚧         | 🚧        |
-| iMessage | ✓         | ✗          | ✗          | ✗          | ✗         | ✓         | ✗          | ✗          | ✗          | ✗         |
-| QQ       | ✓         | 🚧         | 🚧         | 🚧         | 🚧        | ✓         | 🚧         | 🚧         | 🚧         | 🚧        |
-| Telegram | ✓         | ✓          | ✓          | ✓          | ✓         | ✓         | ✓          | ✓          | ✓          | ✓         |
+| Channel    | Recv text | Recv image | Recv video | Recv audio | Recv file | Send text | Send image | Send video | Send audio | Send file |
+| ---------- | --------- | ---------- | ---------- | ---------- | --------- | --------- | ---------- | ---------- | ---------- | --------- |
+| DingTalk   | ✓         | ✓          | ✓          | ✓          | ✓         | ✓         | ✓          | ✓          | ✓          | ✓         |
+| Feishu     | ✓         | ✓          | ✓          | ✓          | ✓         | ✓         | ✓          | ✓          | ✓          | ✓         |
+| Discord    | ✓         | ✓          | ✓          | ✓          | ✓         | ✓         | 🚧         | 🚧         | 🚧         | 🚧        |
+| iMessage   | ✓         | ✗          | ✗          | ✗          | ✗         | ✓         | ✗          | ✗          | ✗          | ✗         |
+| QQ         | ✓         | 🚧         | 🚧         | 🚧         | 🚧        | ✓         | 🚧         | 🚧         | 🚧         | 🚧        |
+| Telegram   | ✓         | ✓          | ✓          | ✓          | ✓         | ✓         | ✓          | ✓          | ✓          | ✓         |
+| Mattermost | ✓         | ✓          | 🚧         | 🚧         | ✓         | ✓         | ✓          | 🚧         | 🚧         | ✓         |
+| Matrix     | ✓         | ✓          | ✓          | ✓          | ✓         | ✓         | ✓          | ✓          | ✓          | ✓         |
 
 Notes:
 
@@ -510,6 +690,7 @@ Notes:
 - **QQ**: Receiving attachments as multimodal and sending real media are 🚧;
   currently text + link-only.
 - **Telegram**: Attachments are parsed as files on receive and can be opened in the corresponding format (image / voice / video / file) within the Telegram chat interface.
+- **Matrix**: Receives image, video, audio, and file attachments via `mxc://` media URLs. Sends media by uploading to the homeserver and sending native Matrix media messages (`m.image`, `m.video`, `m.audio`, `m.file`).
 
 ### Changing config via HTTP
 
