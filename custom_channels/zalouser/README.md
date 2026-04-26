@@ -53,9 +53,23 @@ qwenpaw app
 
 ### Step 4: QR Code Login (First Time)
 
-On first start without saved credentials, the channel generates a QR code.
+On first start without saved credentials, you need to authenticate via QR code.
 
-**How to get QR code image:**
+**Option A: Web UI (Recommended)**
+
+1. Open QwenPaw web interface (default: http://localhost:8088)
+2. Go to **Settings → Channels → Zalo**
+3. Click **Get QR Code** button
+4. Scan the displayed QR code with your Zalo mobile app:
+   - Open Zalo on your phone
+   - Tap **Settings → Zalo Web**
+   - Scan the QR code
+   - Confirm login on your phone
+5. Wait for confirmation - credentials auto-saved
+
+**Option B: Manual QR Code File**
+
+If the channel generates a QR code file on startup:
 
 1. **Find the QR code image** saved at:
    - Windows: `%USERPROFILE%\.qwenpaw\zalouser\qr_login.png`
@@ -66,7 +80,7 @@ On first start without saved credentials, the channel generates a QR code.
 3. **Open Zalo on your phone**
 
 4. **Scan the QR code**:
-   - Tap **Settings -> Zalo Web** (or QR scan feature)
+   - Tap **Settings → Zalo Web** (or QR scan feature)
    - Scan the QR image
    - Confirm login on your phone
 
