@@ -793,6 +793,7 @@
     "zalouserScanHint": "Open Zalo on your phone, go to Settings → Zalo Web, and scan the QR code above.",
     "zalouserAuthSuccess": "Zalo login successful. Credentials saved.",
     "zalouserQrcodeFailed": "Failed to get Zalo QR code. Please try again.",
+    "showTyping": "Show Typing",
     "voiceSetupGuide": "Set up a Twilio account, purchase a phone number, then enter your credentials below. Find your Account SID and Auth Token on the Twilio Console dashboard. The Phone Number SID is listed under Phone Numbers → Active Numbers.",
     "voiceSetupLink": "Open Twilio Console",
     "sipSetupGuide": "Configure a SIP registrar (e.g. Asterisk, FreeSWITCH) and enter your SIP credentials below. In Dev mode, pyVoIP handles SIP/RTP locally. In Production mode, LiveKit SIP Server is used.",

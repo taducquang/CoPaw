@@ -656,6 +656,7 @@
     "zalouserScanHint": "打开手机 Zalo，进入 设置 → Zalo网页版，扫描上方二维码。",
     "zalouserAuthSuccess": "Zalo 登录成功，凭据已保存。",
     "zalouserQrcodeFailed": "获取 Zalo 二维码失败，请重试。",
+    "showTyping": "显示正在输入",
     "voiceSetupGuide": "请先注册 Twilio 账户并购买电话号码，然后在下方填写凭据。Account SID 和 Auth Token 可在 Twilio 控制台首页找到。Phone Number SID 在 Phone Numbers → Active Numbers 中查看。",
     "voiceSetupLink": "打开 Twilio 控制台",
     "sipSetupGuide": "配置 SIP 注册服务器（如 Asterisk、FreeSWITCH），然后在下方填写 SIP 凭据。Dev 模式使用 pyVoIP 在本地处理 SIP/RTP；Production 模式使用 LiveKit SIP Server。",

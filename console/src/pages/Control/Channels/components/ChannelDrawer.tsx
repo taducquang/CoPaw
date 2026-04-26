@@ -213,7 +213,7 @@ export function ChannelDrawer({
     successCredentialKey: "cookies",
     pollInterval: 3000,
     onSuccess: useCallback(
-      (credentials: Record<string, string>) => {
+      (_credentials: Record<string, string>) => {
         message.success(t("channels.zalouserAuthSuccess"));
       },
       [form, message, t],
@@ -1388,7 +1388,9 @@ export function ChannelDrawer({
 
           {isBuiltin
             ? renderBuiltinExtraFields(activeKey)
-            : renderCustomExtraFields(initialValues)}
+            : activeKey === "zalouser"
+              ? renderBuiltinExtraFields("zalouser")
+              : renderCustomExtraFields(initialValues)}
 
           {CHANNELS_WITH_ACCESS_CONTROL.includes(activeKey) &&
             renderAccessControlFields()}
